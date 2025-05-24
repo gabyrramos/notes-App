@@ -10,13 +10,23 @@ const create = async(req, res) => {
    }
 };
 
-const getNotes = async(req, res)=>{
+const listNotes = async (req, res) => {
     try {
-       const notes = await noteService.getAllNotes()
-       res.status(200).json(notes); 
+        const { archived } = req.query; 
+
+        let filterArchived;
+        if (archived === 'true') {
+            filterArchived = true;  
+        } else if (archived === 'false') {
+            filterArchived = false; 
+        } else {
+            filterArchived = null;  
+        }
+        const notes = await noteService.getAllNotes({ filterArchived }); 
+        res.status(200).json(notes);
     } catch (error) {
-        console.error("Error retrieving notes:", error);
-        res.status(500).json({ message: "Could not retrieve notes", details: error.message });
+        console.error("Error listing notes:", error);
+        res.status(500).json({ message: "Failed to retrieve notes.", error: error.message });
     }
 };
 
@@ -73,23 +83,12 @@ const toggleNote = async(req, res) =>{
     }
 };
 
-const getArchivedNotes = async(req,res) =>{
-    try {
-        const archivedNotes = await noteService.getArchivedNotes();
-        res.status(200).json(archivedNotes);
-    } catch (error) {
-        console.error("Error retrieving archived notes", error);
-        res.status(500).json({message: "Failed to retrieve archived notes", details: error.message});
-    }
-};
 
-
-module.export = {
+module.exports = {
     create,
-    getNotes,
+    listNotes,
     getNote,
     updateNote,
     deleteNote,
-    toggleNote,
-    getArchivedNotes
+    toggleNote
 };

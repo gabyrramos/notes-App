@@ -1,12 +1,22 @@
-const { Note } = require('../models/note');
+const { Note } = require('../models');
 
 const createNote = async (data)=>{
 return await Note.create(data);
 };
 
-const getAllNotes = async (archived=false)=>{
-    return await Note.findAll({ where: {isArchived: archived} });
-}
+const getAllNotes = async ({ filterArchived = null } = {}) => { 
+    const whereClause = {};
+
+    if (filterArchived === true) {
+        whereClause.isArchived = true;
+    } else if (filterArchived === false) {
+        whereClause.isArchived = false;
+    }
+    const notes = await Note.findAll({
+        where: whereClause 
+    });
+    return notes;
+};
 
 const getNoteById = async(id) =>{
     return await Note.findByPk(id);
@@ -41,17 +51,11 @@ const archivedNote = async(id) =>{
 };
 
 
-const getArchivedNotes = async(archived=true)=>{
-    const notes = await Note.findAll({where: {isArchived: archived}});
-    return notes;
-};
-
 module.exports = {
     createNote,
     getAllNotes,
     getNoteById,
     updateNote,
     deleteNote,
-    archivedNote,
-    getArchivedNotes
+    archivedNote
 };
