@@ -12,31 +12,38 @@ const getNoteById = async(id) =>{
     return await Note.findByPk(id);
 };
 
-const updateNote = async(id) =>{
+const updateNote = async(id, data) =>{
 const note = await Note.findByPk(id)
-    if(!note) return("Note was not found");
-    return await note.update(data);
+    if(!note) {
+        return null;
+    }
+    const updatedNote=  await note.update(data);
+    return updatedNote;
 };
 
 const deleteNote = async(id) =>{
     const note = await Note.findByPk(id)
-    if(!note) return("Note was not found");
+    if(!note) {
+        return null;
+    }
     await note.destroy();
     return true;
 };
 
 const archivedNote = async(id) =>{
     const note = await Note.findByPk(id)
-    if(!note) return(Null);
+    if(!note){
+        return null;
+    }
     note.isArchived = !note.isArchived;
-    return await note.save();
+    const updatedNote = await note.save();
+    return updatedNote;
 };
 
 
 const getArchivedNotes = async(archived=true)=>{
     const notes = await Note.findAll({where: {isArchived: archived}});
-    if(!notes) return("There are not archived notes");
-    return await notes;
+    return notes;
 };
 
 module.exports = {
