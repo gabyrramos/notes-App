@@ -12,17 +12,18 @@ const create = async(req, res) => {
 
 const listNotes = async (req, res) => {
     try {
-        const { archived } = req.query; 
+        const { archived, categoryId } = req.query; 
 
-        let filterArchived;
+        let filterArchived = null;
         if (archived === 'true') {
             filterArchived = true;  
         } else if (archived === 'false') {
             filterArchived = false; 
-        } else {
-            filterArchived = null;  
-        }
-        const notes = await noteService.getAllNotes({ filterArchived }); 
+        } 
+        const notes = await noteService.getAllNotes({ 
+            filterArchived,
+            categoryId: categoryId ? parseInt(categoryId, 10): null
+        }); 
         res.status(200).json(notes);
     } catch (error) {
         console.error("Error listing notes:", error);
@@ -32,7 +33,11 @@ const listNotes = async (req, res) => {
 
 const getNote = async(req, res)=>{
     try {
-        const note = await noteService.getNoteById()
+        const { id } = req.params;
+        const note = await noteService.getNoteById(id);
+        if (!note) {
+            return res.status(404).json({ message: "Note not found." });
+        }
         res.status(200).json(note);
     } catch (error) {
         console.error("Error obtaining note:", error);
@@ -44,7 +49,7 @@ const updateNote = async(req, res) =>{
     try {
         const { id } = req.params; 
         const updateData = req.body; 
-        const updatedNote = await noteService.updateNote(id, updateData);
+        const updatedNote = await noteService.updateNote(id, req.body);
         if(!updatedNote){
             return res.status(404).json({message: "Not was not found"});
         }

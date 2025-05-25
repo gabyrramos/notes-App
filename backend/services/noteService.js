@@ -1,10 +1,10 @@
-const { Note } = require('../models');
+const { Note, Category } = require('../models');
 
 const createNote = async (data)=>{
 return await Note.create(data);
 };
 
-const getAllNotes = async ({ filterArchived = null } = {}) => { 
+const getAllNotes = async ({ filterArchived = null, categoryId = null } = {}) => { 
     const whereClause = {};
 
     if (filterArchived === true) {
@@ -12,14 +12,29 @@ const getAllNotes = async ({ filterArchived = null } = {}) => {
     } else if (filterArchived === false) {
         whereClause.isArchived = false;
     }
+
+    if(categoryId !== null){
+        whereClause.categoryId = categoryId;
+    }
     const notes = await Note.findAll({
-        where: whereClause 
+        where: whereClause,
+        include: {
+            model: Category,
+            as: 'category',
+            attributes: ['id', 'name']
+        } 
     });
     return notes;
 };
 
 const getNoteById = async(id) =>{
-    return await Note.findByPk(id);
+    return await Note.findByPk(id, {
+        include: {
+            model:Category,
+            as: 'category',
+            attributes: ['id', 'name']
+        }
+    });
 };
 
 const updateNote = async(id, data) =>{

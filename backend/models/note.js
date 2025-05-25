@@ -9,5 +9,11 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: false,
     }
   }, {});
+  Note.associate = function(models){
+    Note.belongsTo(models.Category, {
+      foreignKey: 'categoryId',
+      as: 'category'
+    });
+  };
     return Note;
   };
