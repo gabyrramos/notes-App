@@ -1,142 +1,217 @@
 // src/components/NoteForm.tsx
-import { useState, useEffect } from 'react'; // Import useEffect
-import { createNote, INoteInput, ICategory, fetchCategories, createCategory as apiCreateCategory } from '../lib/api';
+import React, { useState, useEffect } from 'react';
+import { createNote, updateNote, fetchCategories, createCategory, INoteInput, ICategory, INoteWithCategory } from '../lib/api';
 
 interface NoteFormProps {
-  onNoteCreated: () => void;
+  categories: ICategory[]; 
+  onNoteCreated?: () => void; 
+  noteToEdit?: INoteWithCategory; 
+  onNoteUpdated?: () => void; 
+  onCancel?: () => void; 
 }
 
-export default function NoteForm({ onNoteCreated }: NoteFormProps) {
-  const [title, setTitle] = useState<string>('');
-  const [content, setContent] = useState<string>('');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
-  const [categories, setCategories] = useState<ICategory[]>([]);
-  const [showNewCategoryInput, setShowNewCategoryInput] = useState<boolean>(false); 
-  const [newCategoryName, setNewCategoryName] = useState<string>(''); 
+export default function NoteForm({
+  categories: initialCategories, 
+  onNoteCreated,
+  noteToEdit,
+  onNoteUpdated,
+  onCancel,
+}: NoteFormProps) {
+  const [title, setTitle] = useState(noteToEdit?.title || '');
+  const [content, setContent] = useState(noteToEdit?.content || '');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    noteToEdit?.category?.id || null
+  );
 
+  console.log("NoteForm received initialCategories:", initialCategories);
+  const [isArchived, setIsArchived] = useState(noteToEdit?.isArchived || false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [categories, setCategories] = useState<ICategory[]>(initialCategories); 
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
 
-  const loadCategories = async () => {
-    try {
-      const fetchedCategories = await fetchCategories();
-      setCategories(fetchedCategories);
-    } catch (error) {
-      console.error("Error fetching categories for form:", error);
-    }
-  };
 
   useEffect(() => {
-    loadCategories();
-  }, []); 
-
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    if (value === 'new-category') {
-      setShowNewCategoryInput(true); 
-      setSelectedCategoryId(''); 
+    if (noteToEdit) {
+      setTitle(noteToEdit.title);
+      setContent(noteToEdit.content);
+      setSelectedCategoryId(noteToEdit.category?.id || null);
+      setIsArchived(noteToEdit.isArchived);
     } else {
-      setShowNewCategoryInput(false); 
-      setSelectedCategoryId(value);
+      setTitle('');
+      setContent('');
+      setSelectedCategoryId(null);
+      setIsArchived(false);
     }
-  };
+    setNewCategoryName('');
+    setShowNewCategoryInput(false);
+  }, [noteToEdit]);
 
-  const handleCreateNewCategory = async () => {
-    if (!newCategoryName.trim()) {
-      alert("Category name cannot be empty.");
-      return;
-    }
+  useEffect(() => {
+    setCategories(initialCategories);
+  }, [initialCategories]);
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) return;
     try {
-      const createdCategory = await apiCreateCategory({ name: newCategoryName });
-      console.log('New category created:', createdCategory);
+      const newCat = await createCategory({ name: newCategoryName.trim() });
+      setCategories((prev) => [...prev, newCat]);
+      setSelectedCategoryId(newCat.id); 
       setNewCategoryName('');
-      setShowNewCategoryInput(false); 
-      await loadCategories(); 
-      setSelectedCategoryId(String(createdCategory.id));
+      setShowNewCategoryInput(false);
     } catch (error) {
-      console.error("Failed to create new category:", error);
-      alert("Failed to create category. Please try again.");
+      console.error("Error creating category:", error);
+      alert("Failed to create category. Check console for details.");
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!title.trim() || !content.trim()) {
+      alert('Title and Content cannot be empty.');
+      return;
+    }
+
+    const noteData: INoteInput = {
+      title,
+      content,
+      isArchived,
+      categoryId: selectedCategoryId,
+    };
+
     try {
-      const noteData: INoteInput = {
-        title,
-        content,
-        isArchived: false,
-        categoryId: selectedCategoryId ? parseInt(selectedCategoryId, 10) : null,
-      };
-      await createNote(noteData);
-      setTitle('');
-      setContent('');
-      setSelectedCategoryId('');
-      onNoteCreated(); 
+      if (noteToEdit) {
+        // --- EDIT  ---
+        await updateNote(noteToEdit.id, noteData);
+        alert('Note updated successfully!');
+        if (onNoteUpdated) onNoteUpdated(); 
+      } else {
+        // --- CREATE  ---
+        await createNote(noteData);
+        alert('Note created successfully!');
+        setTitle('');
+        setContent('');
+        setSelectedCategoryId(null);
+        setIsArchived(false);
+        if (onNoteCreated) onNoteCreated(); 
+      }
     } catch (error) {
-      console.error("Failed to create note:", error);
+      console.error(noteToEdit ? "Error updating note:" : "Error creating note:", error);
+      alert(noteToEdit ? "Failed to update note. Check console." : "Failed to create note. Check console.");
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2 mb-6 bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">Create New Note</h2>
-      <input
-        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        placeholder="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        required
-      />
-      <textarea
-        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        placeholder="Content"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        rows={4}
-        required
-      />
+    <form onSubmit={handleSubmit} className="p-4 bg-gray-50 rounded-lg shadow-md mb-6">
+      <div className="mb-4">
+        <label htmlFor="title" className="block text-gray-700 text-sm font-bold mb-2">
+          Title:
+        </label>
+        <input
+          type="text"
+          id="title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          placeholder="Note title"
+          required
+        />
+      </div>
 
-      {/* Category Selection Dropdown */}
-      <select
-        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        value={selectedCategoryId}
-        onChange={handleCategoryChange} 
-      >
-        <option value="">-- Select Category (Optional) --</option>
-        {categories.map((category) => (
-          <option key={category.id} value={category.id}>
-            {category.name}
-          </option>
-        ))}
-        <option value="new-category">-- Create New Category --</option> {/* New option */}
-      </select>
+      <div className="mb-4">
+        <label htmlFor="content" className="block text-gray-700 text-sm font-bold mb-2">
+          Content:
+        </label>
+        <textarea
+          id="content"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          rows={4}
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline resize-none"
+          placeholder="Note content"
+          required
+        ></textarea>
+      </div>
 
-      {/* Conditional New Category Input */}
-      {showNewCategoryInput && (
-        <div className="flex gap-2">
+      <div className="mb-4">
+        <label htmlFor="category" className="block text-gray-700 text-sm font-bold mb-2">
+          Category:
+        </label>
+        <select
+          id="category"
+          value={selectedCategoryId || ''}
+          onChange={(e) => {
+            if (e.target.value === 'create_new') {
+              setShowNewCategoryInput(true);
+              setSelectedCategoryId(null);
+            } else {
+              setShowNewCategoryInput(false);
+              setSelectedCategoryId(e.target.value ? parseInt(e.target.value) : null);
+            }
+          }}
+          className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+        >
+          <option value="">-- Select Category (Optional) --</option>
+          {categories.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.name}
+            </option>
+          ))}
+          <option value="create_new">-- Create New Category --</option>
+        </select>
+
+        {showNewCategoryInput && (
+          <div className="mt-2 flex items-center">
+            <input
+              type="text"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="New category name"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+            <button
+              type="button"
+              onClick={handleCreateCategory}
+              className="ml-2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline text-sm"
+            >
+              Add
+            </button>
+          </div>
+        )}
+      </div>
+
+      {noteToEdit && ( 
+        <div className="mb-4 flex items-center">
           <input
-            type="text"
-            className="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="New Category Name"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            required
+            type="checkbox"
+            id="isArchived"
+            checked={isArchived}
+            onChange={(e) => setIsArchived(e.target.checked)}
+            className="mr-2 leading-tight"
           />
-          <button
-            type="button" 
-            onClick={handleCreateNewCategory}
-            className="bg-green-600 text-white p-2 rounded-md hover:bg-green-700 transition-colors"
-          >
-            Create
-          </button>
+          <label htmlFor="isArchived" className="text-sm text-gray-700">
+            Archive Note
+          </label>
         </div>
       )}
 
-      <button
-        type="submit"
-        className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition-colors"
-      >
-        Add Note
-      </button>
+      <div className="flex justify-between items-center">
+        <button
+          type="submit"
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+        >
+          {noteToEdit ? 'Update Note' : 'Add Note'}
+        </button>
+        {noteToEdit && onCancel && ( 
+          <button
+            type="button"
+            onClick={onCancel}
+            className="bg-gray-400 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   );
 }

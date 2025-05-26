@@ -7,6 +7,6 @@ router.get('/', noteController.listNotes);
 router.get('/:id', noteController.getNote);
 router.put('/:id', noteController.updateNote);
 router.delete('/:id', noteController.deleteNote);
-router.patch('/:id/archive', noteController.toggleNote);
+router.patch('/:id/toggle', noteController.toggleNote);
 
 module.exports = router;

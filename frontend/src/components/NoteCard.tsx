@@ -1,12 +1,13 @@
 // src/components/NoteCard.tsx
-import { INoteWithCategory } from '../lib/api'; 
+import { INoteWithCategory, deleteNote, toggleArchiveNote } from '../lib/api';
 
 interface NoteCardProps {
   note: INoteWithCategory;
-  onNoteAction: () => void;
+  onNoteAction: () => void; 
+  onEdit: (note: INoteWithCategory) => void; 
 }
 
-export default function NoteCard({ note, onNoteAction }: NoteCardProps) {
+export default function NoteCard({ note, onNoteAction, onEdit }: NoteCardProps) {
   const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
@@ -20,17 +21,24 @@ export default function NoteCard({ note, onNoteAction }: NoteCardProps) {
 
   const handleDelete = async () => {
     if (confirm('Are you sure you want to delete this note?')) {
-      // await deleteNote(note.id);
-      // onNoteAction(); // Refresh notes after deletion
-      alert("Delete functionality will be added next!"); // Placeholder for now
+      try {
+        await deleteNote(note.id);
+        onNoteAction();
+      } catch (error) {
+        console.error("Error deleting note:", error);
+        alert("Failed to delete note. Check console for details.");
+      }
     }
   };
 
   const handleToggleArchive = async () => {
-  
-    // await toggleArchiveNote(note.id);
-    // onNoteAction(); // Refresh notes after toggle
-    alert("Archive/Unarchive functionality will be added next!"); // Placeholder for now
+    try {
+      await toggleArchiveNote(note.id);
+      onNoteAction();
+    } catch (error) {
+      console.error("Error toggling archive status:", error);
+      alert("Failed to toggle note status. Check console for details.");
+    }
   };
 
   return (
@@ -57,21 +65,20 @@ export default function NoteCard({ note, onNoteAction }: NoteCardProps) {
           {note.isArchived ? 'Archived' : 'Active'}
         </span>
         <div className="space-x-2">
-         
           <button
-            onClick={() => { /* Placeholder for Edit */ alert("Edit functionality coming soon!"); }}
+            onClick={() => onEdit(note)}
             className="px-3 py-1 bg-yellow-500 text-white text-xs rounded-md hover:bg-yellow-600 transition-colors"
           >
             Edit
           </button>
           <button
-            onClick={handleToggleArchive} 
+            onClick={handleToggleArchive}
             className="px-3 py-1 bg-gray-500 text-white text-xs rounded-md hover:bg-gray-600 transition-colors"
           >
             {note.isArchived ? 'Unarchive' : 'Archive'}
           </button>
           <button
-            onClick={handleDelete} 
+            onClick={handleDelete}
             className="px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600 transition-colors"
           >
             Delete

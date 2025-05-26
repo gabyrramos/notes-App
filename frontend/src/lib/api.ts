@@ -44,9 +44,9 @@ async function apiFetch<T>(
       throw new Error(errorData.message || `API error: ${response.status} ${response.statusText}`);
     }
 
- 
     if (response.status === 204) {
-      return {} as T;
+      const isExpectedArray = Array.isArray(null as T); 
+      return (isExpectedArray ? [] : {}) as T;
     }
     return await response.json();
   } catch (error) {

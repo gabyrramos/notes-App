@@ -1,3 +1,4 @@
+// src/pages/index.tsx
 import { GetServerSideProps } from 'next';
 import { useState, useCallback, useEffect } from 'react'; 
 import NoteForm from '../components/NoteForm';
@@ -10,13 +11,15 @@ interface HomeProps {
   serverError?: string;
 }
 
-
 type NoteFilter = 'active' | 'archived' | 'all';
 
 export default function Home({ initialNotes, initialCategories, serverError }: HomeProps) {
   const [notes, setNotes] = useState<INoteWithCategory[]>(initialNotes);
   const [filter, setFilter] = useState<NoteFilter>('active'); 
+  const [categories, setCategories] = useState<ICategory[]>(initialCategories); 
 
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [noteToEdit, setNoteToEdit] = useState<INoteWithCategory | null>(null);
 
   const refreshNotes = useCallback(async (currentFilter: NoteFilter = filter) => {
     try {
@@ -26,19 +29,35 @@ export default function Home({ initialNotes, initialCategories, serverError }: H
       } else if (currentFilter === 'archived') {
         filters.isArchived = true;
       }
-     
-
       const updatedNotes = await fetchNotes(filters); 
       setNotes(updatedNotes);
     } catch (error) {
       console.error("Error refreshing notes:", error);
+      alert("Failed to fetch notes. Check console for details."); 
     }
   }, [filter]); 
-
 
   useEffect(() => {
     refreshNotes(filter); 
   }, [filter, refreshNotes]);
+
+
+  const handleEdit = (note: INoteWithCategory) => {
+    setNoteToEdit(note);
+    setIsEditModalOpen(true);
+  };
+
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setNoteToEdit(null); 
+  };
+
+  
+  const handleNoteUpdated = () => {
+    handleCloseEditModal(); 
+    refreshNotes(filter); 
+  };
 
   if (serverError) {
     return <div className="text-red-500 text-center p-8">Server Error: {serverError}</div>;
@@ -48,7 +67,11 @@ export default function Home({ initialNotes, initialCategories, serverError }: H
     <main className="p-4 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-4 text-gray-800 text-center">📝 My Notes</h1>
 
-      <NoteForm onNoteCreated={() => refreshNotes('active')} /> 
+      {/* Note Form  */}
+      <NoteForm
+        categories={categories} 
+        onNoteCreated={() => refreshNotes('active')}
+      /> 
 
       {/* Filter Buttons */}
       <div className="flex justify-center gap-4 mb-6">
@@ -94,14 +117,33 @@ export default function Home({ initialNotes, initialCategories, serverError }: H
           </p>
         ) : (
           notes.map((note) => (
-            <NoteCard key={note.id} note={note} onNoteAction={() => refreshNotes(filter)} />
+            <NoteCard 
+              key={note.id} 
+              note={note} 
+              onNoteAction={() => refreshNotes(filter)} 
+              onEdit={handleEdit} 
+            />
           ))
         )}
       </div>
+
+    
+      {isEditModalOpen && noteToEdit && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800 text-center">Edit Note</h2>
+            <NoteForm
+              noteToEdit={noteToEdit} 
+              categories={categories} 
+              onNoteUpdated={handleNoteUpdated} 
+              onCancel={handleCloseEditModal} 
+            />
+          </div>
+        </div>
+      )}
     </main>
   );
 }
-
 
 export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
   try {
@@ -121,7 +163,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     return {
       props: {
         initialNotes: [],
-        initialCategories: [],
+        initialCategories: [], 
         serverError: error.message || "Failed to load initial data.",
       },
     };
