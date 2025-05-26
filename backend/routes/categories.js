@@ -6,5 +6,6 @@ router.post('/', categoryController.createCategory);
 router.post('/notes/:noteId/categories/:categoryId', categoryController.assignCategory);
 router.delete('/notes/:noteId/categories/:categoryId', categoryController.removeCategory);
 router.get('/notes/by-category/:categoryName', categoryController.getNotesByCategory);
+router.get('/', categoryController.getCategories);
 
 module.exports = router;

@@ -31,9 +31,15 @@ const getNotesByCategory = async(categoryName) =>{
     return category.notes;
 }
 
+const getAllCategories = async() =>{
+    const categories = await Category.findAll()
+    return categories;
+}
+
 module.exports = {
     createCategory,
     assignCategory,
     unassignCategory,
-    getNotesByCategory
+    getNotesByCategory,
+    getAllCategories
 };
