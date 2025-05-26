@@ -42,14 +42,14 @@ cd <your-repository-name>```
 
 
 2. Set up PostgreSQL
-Create a database (e.g., notes_db)
+- Create a database (e.g., notes_db)
 
-Create a user with access to that DB
+- Create a user with access to that DB
 
-Update backend/config/config.json with your DB credentials
+- Update backend/config/config.json with your DB credentials
 
 🧰 Running the App
-Run the app with the provided shell script:
+- Run the app with the provided shell script:
 
 ```bash
 chmod +x run-app.sh
@@ -58,13 +58,13 @@ chmod +x run-app.sh
 
 This will:
 
-Install backend dependencies and run migrations
+- Install backend dependencies and run migrations
 
-Start backend server at http://localhost:3000
+- Start backend server at http://localhost:3000
 
-Install frontend dependencies
+- Install frontend dependencies
 
-Start frontend server at http://localhost:3001
+- Start frontend server at http://localhost:3001
 
 🗂️ Project Structure
 
@@ -87,7 +87,8 @@ Start frontend server at http://localhost:3001
 
 🧪 Manual Database Migrations
 
-```cd backend
+```bash
+cd backend
 npx sequelize db:migrate              # Apply all migrations
 npx sequelize db:migrate:undo         # Undo last migration
 npx sequelize db:migrate:undo:all     # Undo all
@@ -99,17 +100,17 @@ All endpoints served from: http://localhost:3000
 
 🗒️ Notes
 Method	Endpoint	                Description
-GET	/api/notes	                    Get all notes (with filters)
+GET	/api/notes	                Get all notes (with filters)
 GET	/api/notes/:id	                Get note by ID
-POST /api/notes	                    Create a new note
+POST /api/notes	                        Create a new note
 PUT	/api/notes/:id	                Update an existing note
 PATCH	/api/notes/:id/toggle      	Toggle archive status
-DELETE	/api/notes/:id	            Delete a note
+DELETE	/api/notes/:id	         Delete a note
 
 🏷️ Categories
 Method	Endpoint	            Description
 GET	api/categories	            Get all categories
-POST	api/categories	        Create a category
+POST	api/categories	            Create a category
 
 ⚠️ Deleting categories not implemented to avoid orphaning associated notes.
 
@@ -125,13 +126,13 @@ Tailwind CSS ^3.x.x
 TypeScript ^5.x.x
 
 🔹 Backend
-Node.js
+Node.js ^18.20.5
 
 Express.js ^4.x.x
 
 Sequelize ^6.x.x
 
-PostgreSQL
+PostgreSQL 
 
 Sequelize CLI
 
