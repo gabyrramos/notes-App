@@ -70,7 +70,7 @@ const deleteNote = async(req, res) =>{
         res.status(204).json({ message: "Note deleted successfully." });
     } catch (error) {
         console.error("Error deleting note:", error);
-        res.status(500).json({message:"Error while attemting to delete", details: error.message});
+        res.status(500).json({message:"Error while attempting to delete", details: error.message});
     }
 };
 

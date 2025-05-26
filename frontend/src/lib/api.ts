@@ -1,42 +1,31 @@
-export interface ICategory {
-  id: number;
-  name: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
 
-export interface INote {
-  id: number;
+export interface INoteInput {
   title: string;
   content: string;
   isArchived: boolean;
   categoryId: number | null;
-  createdAt?: string;
-  updatedAt?: string;
 }
 
-export interface INoteWithCategory extends Omit<INote, 'categoryId'> {
-  category: ICategory | null;
+export interface ICategory {
+  id: number;
+  name: string;
 }
 
-export type INoteInput = Omit<INote, 'id' | 'createdAt' | 'updatedAt'>;
-
-export type ICategoryInput = Omit<ICategory, 'id' | 'createdAt' | 'updatedAt'>;
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-if (!API_BASE_URL) {
-  console.error('NEXT_PUBLIC_API_BASE_URL is not defined. Please set it in your .env.local file.');
+export interface INoteWithCategory extends INoteInput {
+  id: number;
+  category?: ICategory | null; 
+  createdAt: string;
+  updatedAt: string;
 }
+
 
 async function apiFetch<T>(
   url: string,
-  options?: RequestInit
+  options?: RequestInit,
+  expectedStatus?: number 
 ): Promise<T> {
-  if (!API_BASE_URL) throw new Error("API Base URL not configured.");
-
   const fullUrl = `${API_BASE_URL}${url}`;
-
   try {
     const response = await fetch(fullUrl, {
       headers: {
@@ -47,89 +36,91 @@ async function apiFetch<T>(
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage = `HTTP error! Status: ${response.status}`;
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.message || errorText;
-      } catch (parseError) {
-        errorMessage = errorText;
+      if (expectedStatus && response.status === expectedStatus) {
+        return {} as T; 
       }
-      throw new Error(errorMessage);
+
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      throw new Error(errorData.message || `API error: ${response.status} ${response.statusText}`);
     }
 
+ 
     if (response.status === 204) {
-      return null as T;
+      return {} as T;
     }
-
-    const data: T = await response.json();
-    return data;
-  } catch (error: any) {
-    console.error("API Call Error:", error.message || error);
+    return await response.json();
+  } catch (error) {
+    console.error('API Fetch Error:', error);
     throw error;
   }
 }
 
-export const fetchNotes = async (
-  filters?: { isArchived?: boolean; categoryId?: number | string | null }
-): Promise<INoteWithCategory[]> => {
+// --- Notes API Functions ---
+
+export const fetchNotes = async (filters?: { isArchived?: boolean | null, categoryId?: number | null }): Promise<INoteWithCategory[]> => {
+  let queryString = '';
   const params = new URLSearchParams();
-  if (filters) {
-    if (filters.isArchived !== undefined) {
-      params.append('isArchived', String(filters.isArchived));
-    }
-    if (filters.categoryId !== undefined && filters.categoryId !== null) {
-      params.append('categoryId', String(filters.categoryId));
-    }
+
+  if (filters?.isArchived !== undefined && filters.isArchived !== null) {
+    params.append('archived', String(filters.isArchived));
   }
-  const queryString = params.toString();
-  return apiFetch<INoteWithCategory[]>(`/api/notes${queryString ? `?${queryString}` : ''}`);
+  if (filters?.categoryId !== undefined && filters.categoryId !== null) {
+    params.append('categoryId', String(filters.categoryId));
+  }
+
+  if (params.toString()) {
+    queryString = `?${params.toString()}`;
+  }
+
+  return apiFetch<INoteWithCategory[]>(`/notes${queryString}`);
 };
 
-export const createNote = async (noteData: INoteInput): Promise<INoteWithCategory> => {
-  return apiFetch<INoteWithCategory>(`/api/notes`, {
+export const createNote = async (note: INoteInput): Promise<INoteWithCategory> => {
+  return apiFetch<INoteWithCategory>('/notes', {
     method: 'POST',
-    body: JSON.stringify(noteData),
+    body: JSON.stringify(note),
   });
 };
 
-export const updateNote = async (noteId: number, noteData: Partial<INoteInput>): Promise<INoteWithCategory> => {
-  return apiFetch<INoteWithCategory>(`/api/notes/${noteId}`, {
+export const deleteNote = async (id: number): Promise<void> => {
+  return apiFetch<void>(`/notes/${id}`, { method: 'DELETE' }, 204); 
+};
+
+export const toggleArchiveNote = async (id: number): Promise<INoteWithCategory> => {
+  return apiFetch<INoteWithCategory>(`/notes/${id}/toggle`, {
+    method: 'PATCH', 
+    body: JSON.stringify({}), 
+  });
+};
+
+export const updateNote = async (id: number, data: Partial<INoteInput>): Promise<INoteWithCategory> => {
+  return apiFetch<INoteWithCategory>(`/notes/${id}`, {
     method: 'PUT',
-    body: JSON.stringify(noteData),
+    body: JSON.stringify(data),
   });
 };
 
-export const deleteNote = async (noteId: number): Promise<void> => {
-  return apiFetch<void>(`/api/notes/${noteId}`, {
-    method: 'DELETE',
-  });
-};
-
-export const toggleArchiveNote = async (noteId: number, isArchived: boolean): Promise<INoteWithCategory> => {
-  return apiFetch<INoteWithCategory>(`/api/notes/${noteId}/archive`, {
-    method: 'PATCH',
-    body: JSON.stringify({ isArchived }),
-  });
-};
+// --- Category API Functions ---
 
 export const fetchCategories = async (): Promise<ICategory[]> => {
-  return apiFetch<ICategory[]>(`/api/categories`);
+  return apiFetch<ICategory[]>('/categories'); // Fetch all categories
 };
 
-export const createCategory = async (categoryData: ICategoryInput): Promise<ICategory> => {
-  return apiFetch<ICategory>(`/api/categories`, {
+export const createCategory = async (category: { name: string }): Promise<ICategory> => {
+  return apiFetch<ICategory>('/categories', {
     method: 'POST',
-    body: JSON.stringify(categoryData),
+    body: JSON.stringify(category),
   });
 };
 
-export const deleteCategory = async (categoryId: number): Promise<void> => {
-  return apiFetch<void>(`/api/categories/${categoryId}`, {
+export const assignCategory = async (noteId: number, categoryId: number): Promise<any> => {
+  return apiFetch<any>(`/notes/${noteId}/assign-category/${categoryId}`, {
+    method: 'POST',
+  });
+};
+
+export const unassignCategory = async (noteId: number, categoryId: number): Promise<any> => {
+  return apiFetch<any>(`/notes/${noteId}/remove-category/${categoryId}`, {
     method: 'DELETE',
   });
-};
-
-export const assignCategoryToNote = async (noteId: number, categoryId: number | null): Promise<INoteWithCategory> => {
-  return updateNote(noteId, { categoryId: categoryId });
 };
