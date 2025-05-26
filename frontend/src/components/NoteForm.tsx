@@ -1,4 +1,3 @@
-// src/components/NoteForm.tsx
 import { useState, useEffect } from 'react';
 import { createNote, updateNote, createCategory, ICategory, INoteWithCategory } from '../lib/api';
 
@@ -24,38 +23,32 @@ export default function NoteForm({
   );
   const [isArchived, setIsArchived] = useState(noteToEdit?.isArchived || false);
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [categories, setCategories] = useState<ICategory[]>(initialCategories); // State initialized from prop
+  const [categories, setCategories] = useState<ICategory[]>(initialCategories);
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
 
-  // console.log("NoteForm initialCategories:", initialCategories); // Remove this console.log if you like
-
-  // Effect to update categories state if initialCategories prop changes
   useEffect(() => {
     setCategories(initialCategories);
   }, [initialCategories]);
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!title || !content) {
-      alert('Title and content are required!');
+      alert('Title and description are required!');
       return;
     }
 
     try {
       let categoryIdToUse = selectedCategoryId;
 
-      // Handle new category creation
       if (showNewCategoryInput && newCategoryName.trim() !== '') {
         const newCat = await createCategory({ name: newCategoryName.trim() });
         categoryIdToUse = newCat.id;
-        // Update categories state immediately for the form to reflect it
         setCategories([...categories, newCat]);
-        setNewCategoryName(''); // Clear new category input
-        setShowNewCategoryInput(false); // Hide input after creation
+        setNewCategoryName('');
+        setShowNewCategoryInput(false);
       } else if (selectedCategoryId === null) {
-        categoryIdToUse = null; // Ensure it's explicitly null if no category is selected
+        categoryIdToUse = null;
       }
 
       const noteData = {
@@ -88,9 +81,9 @@ export default function NoteForm({
     const value = e.target.value;
     if (value === 'create_new') {
       setShowNewCategoryInput(true);
-      setSelectedCategoryId(null); // No category selected yet until new one is created
+      setSelectedCategoryId(null);
     } else if (value === '') {
-      setSelectedCategoryId(null); // For "Select Category (Optional)"
+      setSelectedCategoryId(null);
       setShowNewCategoryInput(false);
     }
     else {
@@ -100,7 +93,6 @@ export default function NoteForm({
   };
 
   return (
-    // Adjusted max-w-xl for smaller form width and added a margin-x auto to center it
     <form onSubmit={handleSubmit} className="p-6 space-y-4 max-w-xl mx-auto">
       <div>
         <label htmlFor="title" className="block text-sm font-medium text-gray-700">
@@ -125,7 +117,6 @@ export default function NoteForm({
           id="content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          // CHANGED PLACEHOLDER TEXT HERE:
           placeholder="Enter note description..."
           rows={5}
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"

@@ -76,21 +76,20 @@ export default function Home({ initialNotes, initialCategories, serverError }: H
 
   return (
     <main className="p-6 md:p-10 max-w-5xl mx-auto font-sans bg-gray-50 min-h-screen">
-      <h1 className="text-4xl font-extrabold mb-10 text-gray-800 text-center">📝 My Personalized Notes</h1>
+      <h1 className="text-3xl font-extrabold mb-10 text-gray-800 text-center">📝 My Notes App </h1> 
 
-      <div className="mb-10 p-6 bg-white rounded-2xl shadow-lg border border-gray-100"> 
+      <div className="mb-10 p-6 bg-white rounded-2xl shadow-lg border border-gray-100">
         <NoteForm
           categories={categories}
           onNoteCreated={() => refreshNotes('active', '')}
         />
       </div>
 
-      {/* Filter Buttons */}
-      <div className="flex flex-wrap justify-center gap-4 mb-8">
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-8">
         <button
           onClick={() => setFilter('active')}
           className={`py-2 px-4 rounded-full text-sm font-semibold transition-all duration-200 shadow-md ${
-            filter === 'active' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+            filter === 'active' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
           Show Active Notes
@@ -98,7 +97,7 @@ export default function Home({ initialNotes, initialCategories, serverError }: H
         <button
           onClick={() => setFilter('archived')}
           className={`py-2 px-4 rounded-full text-sm font-semibold transition-all duration-200 shadow-md ${
-            filter === 'archived' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+            filter === 'archived' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
           Show Archived Notes
@@ -106,14 +105,13 @@ export default function Home({ initialNotes, initialCategories, serverError }: H
         <button
           onClick={() => setFilter('all')}
           className={`py-2 px-4 rounded-full text-sm font-semibold transition-all duration-200 shadow-md ${
-            filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+            filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
           Show All Notes
         </button>
       </div>
 
-      {/* Category Filter Dropdown */}
       <div className="flex justify-center items-center mb-10">
         <label htmlFor="categoryFilter" className="text-gray-700 text-base font-semibold mr-3">
           Filter by Category:
@@ -133,14 +131,12 @@ export default function Home({ initialNotes, initialCategories, serverError }: H
         </select>
       </div>
 
-      {/* To display notes based on filter */}
       <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">
         {filter === 'active' && 'Active Notes'}
         {filter === 'archived' && 'Archived Notes'}
         {filter === 'all' && 'All Notes'}
         ({notes.length})
       </h2>
- 
       <div className="grid grid-cols-1 gap-6"> 
         {notes.length === 0 ? (
           <p className="text-center text-gray-600 col-span-full py-10 text-lg">
@@ -160,10 +156,9 @@ export default function Home({ initialNotes, initialCategories, serverError }: H
         )}
       </div>
 
-      {/* Edit Note Modal */}
       {isEditModalOpen && noteToEdit && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md border border-gray-100"> 
+          <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
             <h2 className="text-2xl font-bold mb-4 text-gray-800 text-center">Edit Note</h2>
             <NoteForm
               noteToEdit={noteToEdit} 
