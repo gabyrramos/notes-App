@@ -37,8 +37,8 @@ psql --version
 1. Clone the repository
 
 ```bash
-git clone <your-repository-url>
-cd <your-repository-name>```
+git clone https://github.com/hirelens-challenges/Ramos-1dbecb.git
+cd Ramos-1dbecb```
 
 
 2. Set up PostgreSQL
