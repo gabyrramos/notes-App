@@ -1,17 +1,17 @@
 // src/components/NoteForm.tsx
-import React, { useState, useEffect } from 'react';
-import { createNote, updateNote, fetchCategories, createCategory, INoteInput, ICategory, INoteWithCategory } from '../lib/api';
+import { useState, useEffect } from 'react';
+import { createNote, updateNote, createCategory, ICategory, INoteWithCategory } from '../lib/api';
 
 interface NoteFormProps {
-  categories: ICategory[]; 
-  onNoteCreated?: () => void; 
-  noteToEdit?: INoteWithCategory; 
-  onNoteUpdated?: () => void; 
-  onCancel?: () => void; 
+  categories: ICategory[];
+  onNoteCreated?: () => void;
+  noteToEdit?: INoteWithCategory;
+  onNoteUpdated?: () => void;
+  onCancel?: () => void;
 }
 
 export default function NoteForm({
-  categories: initialCategories, 
+  categories: initialCategories,
   onNoteCreated,
   noteToEdit,
   onNoteUpdated,
@@ -22,134 +22,126 @@ export default function NoteForm({
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     noteToEdit?.category?.id || null
   );
-
-  console.log("NoteForm received initialCategories:", initialCategories);
   const [isArchived, setIsArchived] = useState(noteToEdit?.isArchived || false);
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [categories, setCategories] = useState<ICategory[]>(initialCategories); 
+  const [categories, setCategories] = useState<ICategory[]>(initialCategories); // State initialized from prop
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
 
+  // console.log("NoteForm initialCategories:", initialCategories); // Remove this console.log if you like
 
-  useEffect(() => {
-    if (noteToEdit) {
-      setTitle(noteToEdit.title);
-      setContent(noteToEdit.content);
-      setSelectedCategoryId(noteToEdit.category?.id || null);
-      setIsArchived(noteToEdit.isArchived);
-    } else {
-      setTitle('');
-      setContent('');
-      setSelectedCategoryId(null);
-      setIsArchived(false);
-    }
-    setNewCategoryName('');
-    setShowNewCategoryInput(false);
-  }, [noteToEdit]);
-
+  // Effect to update categories state if initialCategories prop changes
   useEffect(() => {
     setCategories(initialCategories);
   }, [initialCategories]);
 
-  const handleCreateCategory = async () => {
-    if (!newCategoryName.trim()) return;
-    try {
-      const newCat = await createCategory({ name: newCategoryName.trim() });
-      setCategories((prev) => [...prev, newCat]);
-      setSelectedCategoryId(newCat.id); 
-      setNewCategoryName('');
-      setShowNewCategoryInput(false);
-    } catch (error) {
-      console.error("Error creating category:", error);
-      alert("Failed to create category. Check console for details.");
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim() || !content.trim()) {
-      alert('Title and Content cannot be empty.');
+    if (!title || !content) {
+      alert('Title and content are required!');
       return;
     }
 
-    const noteData: INoteInput = {
-      title,
-      content,
-      isArchived,
-      categoryId: selectedCategoryId,
-    };
-
     try {
+      let categoryIdToUse = selectedCategoryId;
+
+      // Handle new category creation
+      if (showNewCategoryInput && newCategoryName.trim() !== '') {
+        const newCat = await createCategory({ name: newCategoryName.trim() });
+        categoryIdToUse = newCat.id;
+        // Update categories state immediately for the form to reflect it
+        setCategories([...categories, newCat]);
+        setNewCategoryName(''); // Clear new category input
+        setShowNewCategoryInput(false); // Hide input after creation
+      } else if (selectedCategoryId === null) {
+        categoryIdToUse = null; // Ensure it's explicitly null if no category is selected
+      }
+
+      const noteData = {
+        title,
+        content,
+        categoryId: categoryIdToUse,
+        isArchived,
+      };
+
       if (noteToEdit) {
-        // --- EDIT  ---
         await updateNote(noteToEdit.id, noteData);
+        if (onNoteUpdated) onNoteUpdated();
         alert('Note updated successfully!');
-        if (onNoteUpdated) onNoteUpdated(); 
       } else {
-        // --- CREATE  ---
         await createNote(noteData);
-        alert('Note created successfully!');
         setTitle('');
         setContent('');
         setSelectedCategoryId(null);
         setIsArchived(false);
-        if (onNoteCreated) onNoteCreated(); 
+        if (onNoteCreated) onNoteCreated();
+        alert('Note created successfully!');
       }
     } catch (error) {
-      console.error(noteToEdit ? "Error updating note:" : "Error creating note:", error);
-      alert(noteToEdit ? "Failed to update note. Check console." : "Failed to create note. Check console.");
+      console.error("Error saving note:", error);
+      alert("Failed to save note. Check console for details.");
+    }
+  };
+
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (value === 'create_new') {
+      setShowNewCategoryInput(true);
+      setSelectedCategoryId(null); // No category selected yet until new one is created
+    } else if (value === '') {
+      setSelectedCategoryId(null); // For "Select Category (Optional)"
+      setShowNewCategoryInput(false);
+    }
+    else {
+      setSelectedCategoryId(parseInt(value));
+      setShowNewCategoryInput(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 bg-gray-50 rounded-lg shadow-md mb-6">
-      <div className="mb-4">
-        <label htmlFor="title" className="block text-gray-700 text-sm font-bold mb-2">
-          Title:
+    // Adjusted max-w-xl for smaller form width and added a margin-x auto to center it
+    <form onSubmit={handleSubmit} className="p-6 space-y-4 max-w-xl mx-auto">
+      <div>
+        <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+          Title
         </label>
         <input
           type="text"
           id="title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          placeholder="Note title"
+          placeholder="Note Title"
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
           required
         />
       </div>
 
-      <div className="mb-4">
-        <label htmlFor="content" className="block text-gray-700 text-sm font-bold mb-2">
-          Content:
+      <div>
+        <label htmlFor="content" className="block text-sm font-medium text-gray-700">
+          Description
         </label>
         <textarea
           id="content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          rows={4}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline resize-none"
-          placeholder="Note content"
+          // CHANGED PLACEHOLDER TEXT HERE:
+          placeholder="Enter note description..."
+          rows={5}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
           required
         ></textarea>
       </div>
 
-      <div className="mb-4">
-        <label htmlFor="category" className="block text-gray-700 text-sm font-bold mb-2">
-          Category:
+      <div>
+        <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+          Category
         </label>
         <select
           id="category"
-          value={selectedCategoryId || ''}
-          onChange={(e) => {
-            if (e.target.value === 'create_new') {
-              setShowNewCategoryInput(true);
-              setSelectedCategoryId(null);
-            } else {
-              setShowNewCategoryInput(false);
-              setSelectedCategoryId(e.target.value ? parseInt(e.target.value) : null);
-            }
-          }}
-          className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          value={selectedCategoryId !== null ? selectedCategoryId.toString() : ''}
+          onChange={handleCategoryChange}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
         >
           <option value="">-- Select Category (Optional) --</option>
           {categories.map((cat) => (
@@ -159,58 +151,53 @@ export default function NoteForm({
           ))}
           <option value="create_new">-- Create New Category --</option>
         </select>
-
-        {showNewCategoryInput && (
-          <div className="mt-2 flex items-center">
-            <input
-              type="text"
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
-              placeholder="New category name"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            />
-            <button
-              type="button"
-              onClick={handleCreateCategory}
-              className="ml-2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline text-sm"
-            >
-              Add
-            </button>
-          </div>
-        )}
       </div>
 
-      {noteToEdit && ( 
-        <div className="mb-4 flex items-center">
-          <input
-            type="checkbox"
-            id="isArchived"
-            checked={isArchived}
-            onChange={(e) => setIsArchived(e.target.checked)}
-            className="mr-2 leading-tight"
-          />
-          <label htmlFor="isArchived" className="text-sm text-gray-700">
-            Archive Note
+      {showNewCategoryInput && (
+        <div className="mt-4">
+          <label htmlFor="newCategory" className="block text-sm font-medium text-gray-700">
+            New Category Name
           </label>
+          <input
+            type="text"
+            id="newCategory"
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            placeholder="Enter new category name"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+          />
         </div>
       )}
 
-      <div className="flex justify-between items-center">
-        <button
-          type="submit"
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-        >
-          {noteToEdit ? 'Update Note' : 'Add Note'}
-        </button>
-        {noteToEdit && onCancel && ( 
+      <div className="flex items-center">
+        <input
+          type="checkbox"
+          id="isArchived"
+          checked={isArchived}
+          onChange={(e) => setIsArchived(e.target.checked)}
+          className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+        />
+        <label htmlFor="isArchived" className="ml-2 block text-sm text-gray-900">
+          Archive Note
+        </label>
+      </div>
+
+      <div className="flex justify-end space-x-3">
+        {onCancel && (
           <button
             type="button"
             onClick={onCancel}
-            className="bg-gray-400 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
           >
             Cancel
           </button>
         )}
+        <button
+          type="submit"
+          className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+        >
+          {noteToEdit ? 'Update Note' : 'Create Note'}
+        </button>
       </div>
     </form>
   );
