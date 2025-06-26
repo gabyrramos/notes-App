@@ -139,13 +139,6 @@ Sequelize CLI
 pg (PostgreSQL driver)
 
 
-📄 License
-This project is for assessment purposes only.
-
-🙌 Acknowledgments
-Thank you to the Ensolvers team for the opportunity to complete this technical challenge.
-
-Gabriela Ramos ✨
 
 ## 🧭 Future Improvements (Time-Permitting)
 
